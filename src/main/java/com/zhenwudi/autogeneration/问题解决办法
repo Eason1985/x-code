@@ -1,0 +1,203 @@
+
+
+ * 设计数据库时的要求：
+ * 1：设计数据库时必须严格规范。创建一个表后，NAME必须是中文名。COMMENT必须是中文名，COMMENT表示注释。
+ 注释格式可以参见如下格式（如果使用了这个格式，那么自动生成页面的时候，就可以优化相应的页面）
+ 	格式：中文注释[A][B]   其中  
+ 		A：属性意义类型  
+ 		B：属性意义描述
+ 	注释：
+ 	A = 0,1,2,3,4
+ 	    0表示枚举值, 1表示描述, 2该字段是来源于外键,
+ 		3表示正则表达式,4表示主从属性关联外键（如省、市、镇等联动）
+ 	B : 
+ 	    如果A=0: B的格式为：key-value,key-value
+ 	    如果A=1: B的格式为：描述值类型:格式化值 
+ 	    如果A=2: B的格式为：本属性值来源表对应的实体名:表对应的实体的key-表对应的实体的value
+ 	    如果A=3: B的值为：  正则表达式 
+ 	    如果A=4: B的值为：  本属性值来源表表名:来源表keyName-来源表valueName:来源表父属性ID:本表子属性名称
+ 	    
+ 	例子：  开户状态：     COMMENT为：     开户状态[0][0-注销,1-正常]
+ 	      日期：		COMMENT可以为：     日期[1][YYYYMMDD]
+ 	      网点号：    COMMENT可以为：     网点号[2][NETINFO:NETNO-NETNAME]
+ 	      手机号：		COMMENT可以为:      手机号[3][/^1[3|4|5|8] \d{9}$/]
+ 	   如果有一个表T1,其属性含有一个联动关系的属性：privId,cityId,townId
+ 	      其中：privId是省表（T2）T2下的属性有：T2:privId,privName
+ 	      其中：cityId是市表（T3）T3下的属性有：T3:cityId,cityName,privId
+ 	      其中：townId是镇表（T4）T4下的属性有：T3:townId,townName,cityId
+ 	      
+ 	      那么定义T1：
+ 	      省：       COMMENT可以为：      省[4][T2:privId-privName::cityId]
+ 	      	T2:省的表名，privId,privName:T2的列名 ，cityId表示：T1表中的城市ID
+ 	      市：       COMMENT可以为：      市[4][T3:cityId-cityName:privId:tomnId]
+ 	        T3:市的表名，cityId，cityName，privId:T3的列名 ，tomnId表示：T1表中的镇ID
+ *	  
+ * 2：NUMBER 整数还是有小数点，对应的JAVA类型都是BigDecimal。具体精度的控制在程序中控制。
+ * 3：执行下列两个package. 以及一个序列
+ * 4：请导入pdm
+
+------------------------------------------------------------
+查询表的信息
+select * from all_tab_comments t
+where table_name='TB_SYSR_USER'
+
+查询列信息
+select * from all_col_comments t
+where table_name='TB_SYSR_USER'
+
+comment on column TB_SYSR_USER.USER_STATE is '用户状态[0][0-正常,1-密码锁定,2-无效]';
+
+
+
+
+------------------------------------------------------------
+
+
+
+
+ http://blog.csdn.net/haofeng82/article/details/34857991
+
+
+-------------sql-----------------------------------------------------------
+create or replace package PKG_PUB_UTIL is
+  -- Author  : CHENJIA
+  -- Created : 2011/8/2 10:45:04
+  -- Purpose :
+
+    /******************************************************************************
+     NAME           :    ld_idgenerator
+     PURPOSE      :    本地序列生成
+     Version         :    V1.0
+     SystemName   :
+     Module       :    基础数据访问模块
+     OS              :       与平台无关
+     Oracle         :    10G
+     Parameters
+     pType         :
+     Return          无重复序列生成
+     Description  :    基本编码规则是24位字符
+     Exception    :
+     dependence   :
+     Note         :    存储过程中不做数据库事务处理
+     REVISIONS    :
+     Ver        Date        Author           Description
+     ---------  ----------  ---------------  ------------------------------------
+     1.0        2011-08-01   chenjia          1. Created this package body.
+    ******************************************************************************/
+    FUNCTION ld_idgenerator RETURN CHAR;
+
+
+
+
+
+
+
+
+    /******************************************************************************
+     NAME         :    LD_RPT_IDGENERATOR
+     PURPOSE      :    报表专用-生成主键
+     Version      :    V1.0
+     SystemName   :
+     Module       :    基础数据访问模块
+     OS           :    与平台无关
+     Oracle       :    11G
+     Parameters   :
+     pType        :
+     Return       :    无重复序列生成
+     Description  :    基本编码规则是24位字符
+     Exception    :
+     dependence   :
+     Note         :    存储过程中不做数据库事务处理
+     REVISIONS    :
+     Ver        Date        Author           Description
+     ---------  ----------  ---------------  ------------------------------------
+     1.0        2014-01-21  wangliyi           1. Created this package body.
+    ******************************************************************************/
+    FUNCTION LD_RPT_IDGENERATOR RETURN CHAR;
+
+end PKG_PUB_UTIL;
+
+
+create or replace package body PKG_PUB_UTIL is
+
+
+
+
+
+   /******************************************************************************
+     NAME         :    ld_idgenerator
+     PURPOSE      :    本地序列生成
+     Version      :    V1.0
+     SystemName   :
+     Module       :    基础数据访问模块
+     OS           :    与平台无关
+     Oracle       :    10G
+     Parameters
+       pType      :
+       Return          无重复序列生成
+     Description  :    基本编码规则是24位字符
+     Exception    :
+     dependence   :
+     Note         :    存储过程中不做数据库事务处理
+     REVISIONS    :
+     Ver        Date        Author           Description
+     ---------  ----------  ---------------  ------------------------------------
+     1.0        2011-08-01   chenjia          1. Created this package body.
+    ******************************************************************************/
+    FUNCTION ld_idgenerator RETURN CHAR IS
+    vChar NUMBER;
+    BEGIN
+    --采用时间戳加6位的序列号
+    SELECT SEQ_GENERATOR_ID.NEXTVAL INTO vChar FROM dual;
+
+    RETURN('SSID' || TO_CHAR(SYSTIMESTAMP, 'YYYYMMDDHH24MISS') ||
+           lpad(vChar, 6, '0'));
+  END ld_idgenerator;
+
+
+     /******************************************************************************
+     NAME         :    LD_RPT_IDGENERATOR
+     PURPOSE      :    报表专用-生成主键
+     Version      :    V1.0
+     SystemName   :
+     Module       :    基础数据访问模块
+     OS           :    与平台无关
+     Oracle       :    11G
+     Parameters   :
+     pType        :
+     Return       :    无重复序列生成
+     Description  :    基本编码规则是24位字符
+     Exception    :
+     dependence   :
+     Note         :    存储过程中不做数据库事务处理
+     REVISIONS    :
+     Ver        Date        Author           Description
+     ---------  ----------  ---------------  ------------------------------------
+     1.0        2014-01-21  wangliyi           1. Created this package body.
+    ******************************************************************************/
+    FUNCTION LD_RPT_IDGENERATOR RETURN CHAR
+    IS
+      vChar NUMBER;
+    BEGIN
+    --采用时间戳加6位的序列号
+    SELECT SEQ_GENERATOR_ID.NEXTVAL INTO vChar FROM dual;
+
+    RETURN('RPT_' || TO_CHAR(SYSTIMESTAMP, 'YYYYMMDDHH24MISS') ||
+           lpad(vChar, 6, '0'));
+    END;
+
+end PKG_PUB_UTIL;
+
+
+
+
+-- Create sequence 
+create sequence SEQ_GENERATOR_ID
+minvalue 1
+maxvalue 999999999
+start with 1
+increment by 1
+cache 20
+cycle;
+
+ 
