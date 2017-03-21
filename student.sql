@@ -1,4 +1,4 @@
-(
+﻿(
   student_id      VARCHAR2(30) not null,
   stname          VARCHAR2(50),
   stno            VARCHAR2(50),
@@ -39,6 +39,7 @@ comment on column STUDENT.updated_user_cd
 comment on column STUDENT.end_date
   is '终止期间';
 -- Create/Recreate primary, unique and foreign key constraints 
+
 alter table STUDENT
   add constraint PK_STUDENT primary key (STUDENT_ID)
   using index 
